@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 public class DataReceiver implements Runnable {
 
 	DatagramSocket socket;
+	WindowManager windowManager;
 
 	@Override
 	public void run() {
@@ -32,9 +33,10 @@ public class DataReceiver implements Runnable {
 
 	}
 
-	public DataReceiver(DatagramSocket socket) {
+	public DataReceiver(DatagramSocket socket, WindowManager windowManager) {
 
 		this.socket = socket;
+		this.windowManager = windowManager;
 	}
 
 }

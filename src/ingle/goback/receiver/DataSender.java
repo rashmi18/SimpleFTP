@@ -16,9 +16,10 @@ public class DataSender implements Runnable {
 	DatagramSocket socket;
 	Integer sequenceNumber;
 	String sourceFileName;
+	WindowManager windowManager;
 
 	public DataSender(Integer windowSize, Integer MSS, String fileName,
-			String host, DatagramSocket socket) {
+			String host, DatagramSocket socket, WindowManager windowManager) {
 
 		this.MSS = MSS;
 		this.windowSize = windowSize;
@@ -26,6 +27,7 @@ public class DataSender implements Runnable {
 		this.sequenceNumber = 0;
 		this.sourceFileName = fileName;
 		this.socket = socket;
+		this.windowManager = windowManager;
 	}
 
 	public byte[] extractData(byte[] buf, int srcpos, int extractLength) {

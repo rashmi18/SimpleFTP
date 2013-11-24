@@ -9,13 +9,16 @@ public class SenderMain {
 
 		int MSS = 1024, windowSize = 10;
 		DatagramSocket socket = new DatagramSocket();
+		WindowManager windowManager = new WindowManager(MSS * windowSize);
 		DataSender sender = new DataSender(windowSize, MSS, args[0], args[1],
-				socket);
-		DataReceiver receiver = new DataReceiver(socket);
+				socket, windowManager);
+		DataReceiver receiver = new DataReceiver(socket, windowManager);
 
-		WindowManager windowManager = new WindowManager(sender, receiver, MSS
-				* windowSize);
-		windowManager.begin();
+		Thread tSender = new Thread(sender);
+		Thread tReceiver = new Thread(receiver);
+
+		tSender.start();
+		tReceiver.start();
 
 	}
 }
