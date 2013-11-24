@@ -27,9 +27,9 @@ public class ReceiverMain {
 
 				InetAddress address = packet.getAddress();
 				int port = packet.getPort();
-				packet = new DatagramPacket("ACK".getBytes(),
+				DatagramPacket ackPacket = new DatagramPacket("ACK".getBytes(),
 						"ACK".getBytes().length, address, port);
-				socket.send(packet);
+				socket.send(ackPacket);
 
 			}
 

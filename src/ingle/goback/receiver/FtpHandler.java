@@ -20,40 +20,42 @@ public class FtpHandler {
 
 	}
 
-	public void writeToFile(int length, byte[] inputData) throws IOException, ClassNotFoundException {
+	public void writeToFile(int length, byte[] inputData) throws IOException,
+			ClassNotFoundException {
 
-	//	System.out.println("Sequence Number is "+extractSequenceNumber(inputData));
+		// System.out.println("Sequence Number is "+extractSequenceNumber(inputData));
 		Segment obj = PacketSerializer.deserialize(inputData);
-		
-		if(packetToBeDiscarded())
-		{
-			System.out.println("Sequence Number received "+obj.sequenceNumber+" and packet lost");
-			
-		}
-		else
-		{
-			System.out.println("Sequence Number received "+obj.sequenceNumber+" and packet accepted");
+
+		 if (packetToBeDiscarded()) {
+		//if (obj.sequenceNumber == 0) {
+			System.out.println("Sequence Number received " + obj.sequenceNumber
+					+ " and packet lost");
+
+		} else {
+			System.out.println("Sequence Number received " + obj.sequenceNumber
+					+ " and packet accepted");
+			String str = new String("Packet no." + obj.sequenceNumber);
+			out.write(str.getBytes());
 			out.write(obj.dataTobeSent);
 		}
 
 	}
 
-	public boolean packetToBeDiscarded()
-	{
-		int max = 1,min=0;
-		double randomValue = Math.random()*((max-min)+1);
-		if(randomValue>1.0)
-			randomValue-=1.0;
+	public boolean packetToBeDiscarded() {
+		int max = 1, min = 0;
+		double randomValue = Math.random() * ((max - min) + 1);
+		if (randomValue > 1.0)
+			randomValue -= 1.0;
 		System.out.println(randomValue);
-		if(randomValue>probability) //accept packet
+		if (randomValue > probability) // accept packet
 		{
 			return true;
 
 		}
 		return false;
-		
+
 	}
-	
+
 	public int extractSequenceNumber(byte[] input) throws IOException {
 		int sequenceNumber = 0;
 		byte[] sequence = new byte[3];
@@ -65,12 +67,12 @@ public class FtpHandler {
 		ois.close();
 		return sequenceNumber;
 	}
-	public byte[] extractData(byte[]inputData)
-	{
-		byte[] input = new byte[inputData.length-2];
-		
-		System.arraycopy(inputData, 2, input, 0, inputData.length-2);
-		
+
+	public byte[] extractData(byte[] inputData) {
+		byte[] input = new byte[inputData.length - 2];
+
+		System.arraycopy(inputData, 2, input, 0, inputData.length - 2);
+
 		return input;
 	}
 

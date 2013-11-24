@@ -33,6 +33,9 @@ public class DataSender implements Runnable {
 
 			byte[] segment = formSegment(input);
 
+			// FileOutputStream out = new FileOutputStream("temp.txt");
+			// if (sequenceNumber == 1)
+			// out.write(segment);
 			InetAddress address = InetAddress.getByName(host);
 
 			DatagramPacket packet = new DatagramPacket(segment, segment.length,
@@ -56,13 +59,25 @@ public class DataSender implements Runnable {
 
 	@Override
 	public void run() {
-		byte[] buf = new byte[1024];
+
 		FileInputStream input;
 		try {
-			input = new FileInputStream(sourceFileName);
-			while (input.read(buf) != -1) {
 
-				rdtSend(buf);
+			int numberOfBytesRead = 0;
+			int chunkSize = 1024;
+			input = new FileInputStream(sourceFileName);
+			byte[] buf = new byte[1024];
+			while ((numberOfBytesRead = input.read(buf)) != -1) {
+
+				if (numberOfBytesRead < chunkSize) {
+					byte[] smallBuffer = new byte[numberOfBytesRead];
+					System.arraycopy(buf, 0, smallBuffer, 0, numberOfBytesRead);
+					rdtSend(smallBuffer);
+				} else {
+					rdtSend(buf);
+				}
+				buf = new byte[1024];
+
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -73,5 +88,4 @@ public class DataSender implements Runnable {
 		}
 
 	}
-
 }
