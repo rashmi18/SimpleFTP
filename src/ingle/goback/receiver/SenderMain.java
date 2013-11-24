@@ -7,14 +7,15 @@ public class SenderMain {
 
 	public static void main(String[] args) throws IOException {
 
-		int MSS=100,windowSize=10;
+		int MSS = 1024, windowSize = 10;
 		DatagramSocket socket = new DatagramSocket();
-		DataSender sender = new DataSender(MSS, windowSize, args[0], args[1], socket);
+		DataSender sender = new DataSender(windowSize, MSS, args[0], args[1],
+				socket);
 		DataReceiver receiver = new DataReceiver(socket);
 
-		WindowManager windowManager = new WindowManager(sender,receiver,MSS*windowSize);
+		WindowManager windowManager = new WindowManager(sender, receiver, MSS
+				* windowSize);
 		windowManager.begin();
-		
 
 	}
 }
