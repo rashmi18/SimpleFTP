@@ -30,6 +30,30 @@ public static Segment deserialize(byte[]data) throws IOException, ClassNotFoundE
     iStream.close();
         return obj;
 }
+public static byte[] acknowledgementSerialize(Acknowledgement ack) throws IOException
+{
+	
+	
+	ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	ObjectOutputStream oos = new ObjectOutputStream(baos);
+	oos.writeObject(ack);
+	oos.close();
+	// get the byte array of the object
+	byte []serializedData = baos.toByteArray();
+	System.out.println("Sending segment of   buffersize" + serializedData.length);
+	baos.close();
+	
+	return serializedData;
+}
+public static Acknowledgement acknowledgementDeserialize(byte[]data) throws IOException, ClassNotFoundException
+{
+	ObjectInputStream iStream = new ObjectInputStream(new ByteArrayInputStream(data));
+	Acknowledgement obj = (Acknowledgement) iStream.readObject();
+	iStream.close();
+	return obj;
+}
+
+
 
 
 

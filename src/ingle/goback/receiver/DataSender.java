@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
+import java.util.List;
 
 public class DataSender implements Runnable {
 
@@ -32,6 +34,7 @@ public class DataSender implements Runnable {
 
 	public byte[] extractData(byte[] buf, int srcpos, int extractLength) {
 		byte dest[] = new byte[extractLength];
+		System.out.println("Source pos is "+srcpos + "extract length is "+extractLength);
 		System.arraycopy(buf, srcpos, dest, 0, extractLength);
 		return dest;
 	}
@@ -41,9 +44,9 @@ public class DataSender implements Runnable {
 		int srcPos = 0, length = input.length, originalLength = input.length;
 		int extractLength = 0;
 
-		if (input.length > MSS) {
-
+		try {
 			while (srcPos < originalLength) {
+				System.out.println("Source pos is "+srcPos + "original length is "+originalLength);
 				if (length < MSS) {
 					extractLength = length;
 				} else {
@@ -51,37 +54,64 @@ public class DataSender implements Runnable {
 					extractLength = MSS;
 				}
 
-				srcPos = srcPos + extractLength;
+				
 				byte[] extractedData = extractData(input, srcPos, extractLength);
+				srcPos = srcPos + extractLength;
 				System.out.println("ExtractedData is of length"
 						+ extractedData.length);
-				byte[] segment = formSegment(extractedData);
 
-				// FileOutputStream out = new FileOutputStream("temp.txt");
-				// if (sequenceNumber == 1)
-				// out.write(segment);
-				InetAddress address = InetAddress.getByName(host);
+				while (windowManager.numberOfoutstandingFrames.get() >= windowSize) {
+					System.out.println("numberof outstanding frames"
+							+ windowManager.numberOfoutstandingFrames.get());
+				}
+				System.out.println("after while loop");
+				Segment segment = formSegment(extractedData);
+				storeSegment(windowManager.getWindow(), segment);
 
-				DatagramPacket packet = new DatagramPacket(segment,
-						segment.length, address, 4445);
+				byte[] segmentData = convertToBytes(segment);
+				sendPacket(segmentData);
+				windowManager.numberOfoutstandingFrames.getAndIncrement();
+				
+				//System.out.println("Time out is "+socket.getSoTimeout());	
+				//if (socket.getSoTimeout() == 0) {
+					socket.setSoTimeout(1000);
+			//	}
 
-				System.out.println("Sending segment of size"
-						+ packet.getLength());
-				socket.send(packet);
-				sequenceNumber++;
 			}
+		} catch (SocketTimeoutException timeOut) {
 
+			System.out.println("In socket timeout");
 		}
 
 		return dataSentSize;
 	}
 
-	public byte[] formSegment(byte[] inputData) throws IOException {
+	public void sendPacket(byte[] segmentData) throws IOException {
+		InetAddress address = InetAddress.getByName(host);
 
-		Segment segmentData = new Segment(sequenceNumber, inputData);
-		byte[] segmentTobeSent = PacketSerializer.serialize(segmentData);
+		DatagramPacket packet = new DatagramPacket(segmentData,
+				segmentData.length, address, 4445);
+
+		System.out.println("Sending segment of size" + packet.getLength());
+		socket.send(packet);
+		sequenceNumber++;
+	}
+
+	public void storeSegment(List<Segment> window, Segment segment) {
+		window.add(segment);
+
+	}
+
+	public byte[] convertToBytes(Segment data) throws IOException {
+		byte[] segmentTobeSent = PacketSerializer.serialize(data);
 
 		return segmentTobeSent;
+	}
+
+	public Segment formSegment(byte[] inputData) throws IOException {
+
+		Segment segmentData = new Segment(sequenceNumber, inputData);
+		return segmentData;
 	}
 
 	@Override
@@ -90,8 +120,6 @@ public class DataSender implements Runnable {
 		FileInputStream input;
 		try {
 
-			int numberOfBytesRead = 0;
-			int chunkSize = 1024;
 			File file = new File(sourceFileName);
 			input = new FileInputStream(file);
 			byte[] buf = new byte[(int) file.length()];

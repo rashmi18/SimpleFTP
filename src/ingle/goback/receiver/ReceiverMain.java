@@ -15,7 +15,7 @@ public class ReceiverMain {
 			byte[] buf = new byte[1999];
 
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
-			FtpHandler handler = new FtpHandler(args[0], args[1]);
+			FtpHandler handler = new FtpHandler(args[0], args[1],socket);
 			while (true) {
 				socket.receive(packet);
 				int receivedBytes = packet.getLength();
@@ -23,13 +23,9 @@ public class ReceiverMain {
 				byte[] object = new byte[receivedBytes];
 				System.arraycopy(buf, 0, object, 0, receivedBytes);
 
-				handler.writeToFile(object.length, object);
+				handler.acceptData(object.length, object,packet);
 
-				InetAddress address = packet.getAddress();
-				int port = packet.getPort();
-				DatagramPacket ackPacket = new DatagramPacket("ACK".getBytes(),
-						"ACK".getBytes().length, address, port);
-				socket.send(ackPacket);
+				
 
 			}
 
