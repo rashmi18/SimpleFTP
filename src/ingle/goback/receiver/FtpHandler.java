@@ -63,8 +63,8 @@ public class FtpHandler {
 
 		System.out.println("Sequence Number received " + obj.sequenceNumber
 				+ " and packet accepted");
-		String str = new String("Packet no." + obj.sequenceNumber);
-		out.write(str.getBytes());
+		// String str = new String("Packet no." + obj.sequenceNumber);
+		// out.write(str.getBytes());
 		out.write(obj.dataTobeSent);
 	}
 
@@ -74,10 +74,10 @@ public class FtpHandler {
 		if (randomValue > 1.0)
 			randomValue -= 1.0;
 		System.out.println(randomValue);
-		 if(obj.sequenceNumber == 0)
-		 return true;
-		//if (obj.sequenceNumber != sequenceNumberExpected)
-			//return true;
+		// if (obj.sequenceNumber == 0)
+		// return true;
+		if (obj.sequenceNumber != sequenceNumberExpected)
+			return true;
 		if (randomValue > probability) // accept packet
 		{
 			return true;

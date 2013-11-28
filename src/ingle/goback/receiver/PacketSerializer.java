@@ -18,7 +18,7 @@ public static byte[] serialize(Segment segment) throws IOException
 	oos.close();
 	// get the byte array of the object
 	byte []serializedData = baos.toByteArray();
-	System.out.println("Sending segment of   buffersize" + serializedData.length);
+	//System.out.println("Sending segment of   buffersize" + serializedData.length);
 	baos.close();
 	
 	return serializedData;

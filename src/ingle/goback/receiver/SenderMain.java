@@ -2,23 +2,24 @@ package ingle.goback.receiver;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.util.Timer;
 
 public class SenderMain {
 
 	public static void main(String[] args) throws IOException {
 
-		int MSS = 1024, windowSize = 10;
+		int MSS = 1000, windowSize = 3;
 		DatagramSocket socket = new DatagramSocket();
 		WindowManager windowManager = new WindowManager();
-		DataSender sender = new DataSender(windowSize, MSS, args[0], args[1],
-				socket, windowManager);
-		DataReceiver receiver = new DataReceiver(socket, windowManager);
+		Timer timer = new Timer();
+		FrameSender sender = new FrameSender(windowSize, MSS, args[0], args[1],
+				socket, windowManager, timer);
 
 		Thread tSender = new Thread(sender);
-		Thread tReceiver = new Thread(receiver);
+		// Thread tReceiver = new Thread(receiver);
 
 		tSender.start();
-		tReceiver.start();
+		// tReceiver.start();
 
 	}
 }
