@@ -1,5 +1,6 @@
 package ingle.goback.receiver;
 
+import java.awt.Frame;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -25,23 +26,38 @@ public class FrameSender implements Runnable {
 	WindowManager windowManager;
 	Timer timer;
 	AtomicBoolean isRetransmitting;
+	AtomicBoolean isTimerRunning;
 	private Semaphore windowAccess;
 
 	class RetransmitTimer extends TimerTask {
 
+		
+		public void resendFrames() throws IOException
+		{
+			InetAddress address = InetAddress.getByName(host);
+			byte[] segmentData;
+			int windowEnd = windowManager.getWindow().getWindowEnd();
+			for(int i =0;i<=windowEnd;i++)
+			{
+				//if(!isTimerRunning.get())
+				//{
+					timer = new Timer();
+					timer.schedule(new RetransmitTimer(),1000);
+				//}
+				Segment segment = windowManager.getWindow().getBuffer().get(i);
+				segmentData = convertToBytes(segment);
+				DatagramPacket packet = new DatagramPacket(segmentData,
+						segmentData.length, address, 4445);
+
+				 System.out.println("Resending segment sequence number" +
+				 segment.sequenceNumber);
+				socket.send(packet);
+
+			}
+				
+		}
 		@Override
 		public void run() {
-			// try {
-			System.out.println("Before acquire");
-			// windowAccess.acquire();
-			System.out.println("After acquire");
-			// }
-			/*
-			 * catch (InterruptedException e1) { // TODO Auto-generated catch
-			 * block e1.printStackTrace(); }
-			 */
-			System.out.println("Before retransmitting started outstanding="
-					+ windowManager.numberOfoutstandingFrames.get());
 
 			if (windowManager.getWindow().size() > 0) {
 				isRetransmitting.set(true);
@@ -50,29 +66,21 @@ public class FrameSender implements Runnable {
 
 			}
 
-			for (int i = 0; i < windowManager.numberOfoutstandingFrames.get(); i++) {
-				byte[] segmentData;
 				try {
-
-					System.out.println("\nResending packet no."
-							+ windowManager.getWindow().get(i).sequenceNumber);
-					System.out.println("\nNumber of outstanding frames."
-							+ windowManager.numberOfoutstandingFrames.get());
-
-					segmentData = convertToBytes(windowManager.getWindow().get(
-							i));
-					sendPacket(segmentData);
+			//		windowAccess.acquire();
+					resendFrames();
+					windowAccess.release();
 				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-			}
-			// windowAccess.release();
 			isRetransmitting.set(false);
-		}
 	}
-
+	}
 	class AcknowledgementReceiver implements Runnable {
 
 		@Override
@@ -92,22 +100,22 @@ public class FrameSender implements Runnable {
 					System.out.println("Data expected" + ack.sequenceNumber);
 
 					int count = 0;
-					while (windowManager.getWindow().size() > 0
+					windowAccess.acquire();
+					while (!windowManager.isEmpty()
 							&& windowManager.getWindow().get(0).sequenceNumber < ack.sequenceNumber) {
 						// if retransmitting, don't remove the element for which
 						// late ack received
 
-						if (count == 0)
-							timer.cancel();
+						
 						count++;
 						System.out
 								.println("Removing segment with sequence number "
 										+ windowManager.getWindow().get(0).sequenceNumber);
 						windowManager.getWindow().remove();
-						windowManager.numberOfoutstandingFrames
-								.getAndDecrement();
 					}
-
+					if(isTimerRunning.get())
+					timer.cancel();
+					isTimerRunning.set(false);
 				}
 
 				// socket.setSoTimeout(0);
@@ -117,6 +125,9 @@ public class FrameSender implements Runnable {
 				System.out.println("Scoket timed out yay");
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -139,6 +150,7 @@ public class FrameSender implements Runnable {
 		this.timer = timer;
 		this.isRetransmitting = new AtomicBoolean(false);
 		this.windowAccess = new Semaphore(1);
+		this.isTimerRunning = new AtomicBoolean(false);
 	}
 
 	public byte[] extractData(byte[] buf, int srcpos, int extractLength) {
@@ -171,32 +183,29 @@ public class FrameSender implements Runnable {
 
 				byte[] extractedData = extractData(input, srcPos, extractLength);
 				srcPos = srcPos + extractLength;
-				// System.out.println("ExtractedData is of length"
-				// + extractedData.length);
-				int segmentCount = windowSize;
-				while(!windowManager.getWindow().isWindowFlushed())
-					;
-
 				Segment segment = formSegment(extractedData);
-				int first=storeSegment(windowManager.getWindow(), segment);
-				System.out.println("First value"+ first);
-				System.out.println("sending sequence number"
-						+ segment.sequenceNumber);
+				storeSegment(windowManager.getWindow(), segment);
 				sequenceNumber++;
-				byte[] segmentData = convertToBytes(segment);
-				sendPacket(segmentData);
-				windowManager.numberOfoutstandingFrames.getAndIncrement();
-				if (first == 1) {
-					System.out.println("TImer scheduled for "
-							+ segment.sequenceNumber);
+			}	
+				
+			while(!windowManager.getWindow().isEmpty())
+			{
+				windowManager.getWindow().setWindow();
+				//byte[] segmentData = convertToBytes(segment);
+				//sendFrames(segmentData);
+				//windowManager.numberOfoutstandingFrames.getAndIncrement();
+					//		+ segment.sequenceNumber);
 					flag = 1;
-					Timer timer = new Timer();
-					this.timer = timer;
-					timer.schedule(new RetransmitTimer(), 1000);
-
-					}
-			}
-		} catch (InterruptedIOException timeOut) {
+					//Timer timer = new Timer();
+					//this.timer = timer;
+					//timer.schedule(new RetransmitTimer(), 1000);
+					//isTimerRunning.set(true);
+					sendFrames();
+					while(!windowManager.getWindow().isWindowMoved())
+						;
+			} 
+		}
+		catch (InterruptedIOException timeOut) {
 
 			System.out.println("In socket timeout");
 		}
@@ -204,25 +213,37 @@ public class FrameSender implements Runnable {
 		return dataSentSize;
 	}
 
-	public void sendPacket(byte[] segmentData) throws IOException {
+	public void sendFrames() throws IOException {
 		InetAddress address = InetAddress.getByName(host);
+		byte[] segmentData;
+		int windowEnd = windowManager.getWindow().getWindowEnd();
+		for(int i =0;i<=windowEnd;i++)
+		{
+			//if(!isTimerRunning.get())
+			//{
+				timer = new Timer();
+				timer.schedule(new RetransmitTimer(),1000);
+			//}
+			Segment segment = windowManager.getWindow().getBuffer().get(i);
+			segmentData = convertToBytes(segment);
+			DatagramPacket packet = new DatagramPacket(segmentData,
+					segmentData.length, address, 4445);
 
-		DatagramPacket packet = new DatagramPacket(segmentData,
-				segmentData.length, address, 4445);
+			 System.out.println("Sending segment sequence number" +
+			 segment.sequenceNumber);
+			socket.send(packet);
 
-		// System.out.println("Sending segment sequence number" +
-		// packet.getLength());
-		socket.send(packet);
-
+		}
+			
+		
 	}
 
-	public int storeSegment(Window window, Segment segment) {
-		int firstSegment = window.add(segment);
+	public void storeSegment(Window window, Segment segment) {
+		window.add(segment);
 		int index = window.indexOf(segment);
 		System.out.println("Segment of sequence number "
 				+ segment.sequenceNumber + "added at position " + index);
 
-		return firstSegment;
 		// window.get
 	}
 

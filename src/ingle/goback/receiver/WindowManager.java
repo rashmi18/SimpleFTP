@@ -16,7 +16,7 @@ public class WindowManager {
 	Window window;
 	byte[] mainBuffer;
 
-	public WindowManager() {
+	public WindowManager(Integer windowSize) {
 
 		// this.windowSizeInBytes.set(windowSize);
 		this.outstandingFramePointer = new AtomicInteger(0);
@@ -25,7 +25,7 @@ public class WindowManager {
 		this.numberOfoutstandingFrames = new AtomicInteger(0);
 		this.firstFrameSent = new AtomicBoolean(false);
 		// mainBuffer = new byte[windowSizeInBytes.get()];
-		this.window = new Window();
+		this.window = new Window(windowSize);
 	}
 
 	public void begin() {

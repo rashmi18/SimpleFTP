@@ -10,7 +10,7 @@ public class SenderMain {
 
 		int MSS = 1000, windowSize = 3;
 		DatagramSocket socket = new DatagramSocket();
-		WindowManager windowManager = new WindowManager();
+		WindowManager windowManager = new WindowManager(windowSize);
 		Timer timer = new Timer();
 		FrameSender sender = new FrameSender(windowSize, MSS, args[0], args[1],
 				socket, windowManager, timer);

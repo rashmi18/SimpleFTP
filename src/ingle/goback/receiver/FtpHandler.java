@@ -77,8 +77,11 @@ public class FtpHandler {
 		// if (obj.sequenceNumber == 0)
 		// return true;
 		if (obj.sequenceNumber != sequenceNumberExpected)
+		{	
+			System.out.println("\nSorry sequence number expected"+sequenceNumberExpected);
 			return true;
-		if (randomValue > probability) // accept packet
+		}
+			if (randomValue > probability) // accept packet
 		{
 			return true;
 
