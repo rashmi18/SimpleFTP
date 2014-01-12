@@ -17,9 +17,12 @@ public class FtpHandler {
 	DatagramPacket packet;
 	DatagramSocket socket;
 	int sequenceNumberExpected = 0;
+	int portNumber;
 
-	public FtpHandler(String fileName, String probability, DatagramSocket socket)
-			throws IOException {
+	public FtpHandler(int portNumber, String fileName, String probability,
+			DatagramSocket socket) throws IOException {
+
+		this.portNumber = portNumber;
 		this.fileName = fileName;
 		this.probability = Double.parseDouble(probability);
 		this.socket = socket;
@@ -31,15 +34,19 @@ public class FtpHandler {
 			throws IOException, ClassNotFoundException {
 		this.packet = packet;
 		Segment obj = PacketSerializer.deserialize(inputData);
-		if (packetToBeDiscarded(obj)) {
-			System.out.println("Sequence Number received " + obj.sequenceNumber
-					+ " and packet lost");
 
-		} else {
+		if (obj.sequenceNumber < sequenceNumberExpected)
+			sendACK(obj.sequenceNumber+1);
+		else {
+			if (packetToBeDiscarded(obj)) {
 
-			writeToFile(length, obj);
-			sendACK(obj.sequenceNumber + 1);
-			sequenceNumberExpected = obj.sequenceNumber + 1;
+			} else {
+
+				writeToFile(length, obj);
+				sendACK(obj.sequenceNumber + 1);
+				sequenceNumberExpected = obj.sequenceNumber + 1;
+			}
+
 		}
 	}
 
@@ -49,7 +56,7 @@ public class FtpHandler {
 		Acknowledgement acknowledgement = new Acknowledgement();
 		acknowledgement.sequenceNumber = sequenceNumber;
 
-		System.out.println("Ack sent");
+		//System.out.println("Ack sent " + acknowledgement.sequenceNumber);
 		byte[] buf = PacketSerializer.acknowledgementSerialize(acknowledgement);
 		DatagramPacket ackPacket = new DatagramPacket(buf, buf.length, address,
 				port);
@@ -61,8 +68,8 @@ public class FtpHandler {
 
 		// System.out.println("Sequence Number is "+extractSequenceNumber(inputData));
 
-		System.out.println("Sequence Number received " + obj.sequenceNumber
-				+ " and packet accepted");
+		// System.out.println("Sequence Number received " + obj.sequenceNumber
+		// + " and packet accepted");
 		// String str = new String("Packet no." + obj.sequenceNumber);
 		// out.write(str.getBytes());
 		out.write(obj.dataTobeSent);
@@ -73,16 +80,17 @@ public class FtpHandler {
 		double randomValue = Math.random() * ((max - min) + 1);
 		if (randomValue > 1.0)
 			randomValue -= 1.0;
-		System.out.println(randomValue);
+		// System.out.println(randomValue);
 		// if (obj.sequenceNumber == 0)
 		// return true;
-		if (obj.sequenceNumber != sequenceNumberExpected)
-		{	
-			System.out.println("\nSorry sequence number expected"+sequenceNumberExpected);
+		if (obj.sequenceNumber != sequenceNumberExpected) {
+
 			return true;
 		}
-			if (randomValue > probability) // accept packet
+		if (randomValue <= probability) // accept packet
 		{
+			System.out.println("Packet loss, sequence number = "
+					+ obj.sequenceNumber);
 			return true;
 
 		}

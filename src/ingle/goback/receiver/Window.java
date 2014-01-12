@@ -65,7 +65,7 @@ public class Window {
 	}
 
 	public void remove() {
-		System.out.println("Window ending is "+windowEnd.get());
+		//System.out.println("Window ending is "+windowEnd.get());
 		if (windowEnd.get() != -1) {
 			buffer.remove(0);
 			windowEnd.decrementAndGet();

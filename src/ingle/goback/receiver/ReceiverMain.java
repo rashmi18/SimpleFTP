@@ -10,16 +10,22 @@ public class ReceiverMain {
 	public static void main(String[] args) throws ClassNotFoundException {
 		try {
 
-			DatagramSocket socket = new DatagramSocket(4445);
+			
+			int portNumber = Integer.parseInt(args[0]);
+			
+			String fileName = args[1];
+			String probability = args[2];
+			
+			
+			DatagramSocket socket = new DatagramSocket(portNumber);
 
-			byte[] buf = new byte[1999];
+			byte[] buf = new byte[4000];
 
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
-			FtpHandler handler = new FtpHandler(args[0], args[1],socket);
+			FtpHandler handler = new FtpHandler(portNumber, fileName,probability,socket);
 			while (true) {
 				socket.receive(packet);
 				int receivedBytes = packet.getLength();
-				System.out.println("Received bytes" + receivedBytes);
 				byte[] object = new byte[receivedBytes];
 				System.arraycopy(buf, 0, object, 0, receivedBytes);
 
